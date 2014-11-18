@@ -1,0 +1,223 @@
+{
+  "variables": {
+    "box_name": "spantree-puppet-bootstrap-precise64",
+
+    "iso_url": "http://releases.ubuntu.com/14.04.1/ubuntu-14.04.1-server-amd64.iso",
+    "iso_checksum": "ca2531b8cd79ea5b778ede3a524779b9",
+    "iso_checksum_type": "md5",
+
+    "aws_access_key": "{{env `AWS_ACCESS_KEY`}}",
+    "aws_secret_key": "{{env `AWS_SECRET_KEY`}}",
+    "source_ami": "ami-5ad75532",
+
+    "headless": true,
+    
+    "version": "1.0.0",
+    "build_number": 1,
+
+    "project_dir": "/usr/local/src/spantree-puppet-bootstrap",
+    
+    "hostname": "puppetbootstrap.spantree.internal",
+
+    "ovf_file": "{{env `HOME`}}/.packer/virtualbox-trusty64-1.0.2.ovf"
+  },
+
+  "builders": [
+    {
+      "name": "amazon-ebs",
+      "type": "amazon-ebs",
+      
+      "access_key": "{{user `aws_access_key`}}",
+      "secret_key": "{{user `aws_secret_key`}}",
+      
+      "source_ami": "{{user `source_ami`}}",
+      "ami_description": "{{ user `box_name` }}-{{user `version`}}-{{ user `build_number` }} amd64",
+      "ami_name": "{{ user `box_name` }}-{{ user `version`}}-{{ user `build_number` }} ubuntu 14.04.01 amd64 {{isotime | clean_ami_name}}",
+      
+      "instance_type": "c3.large",
+      "region": "us-east-1",
+      
+      "ssh_username": "ubuntu",
+      
+      "tags": {
+        "OS_Version": "Ubuntu",
+        "Release": "trusty",
+        "Vendor": "spantree",
+        "Name": "{{ user `box_name` }}-{{ user `version`}}-{{ user `build_number` }}",
+        "Version": "{{user `version`}}-{{ user `build_number` }}"
+      }
+    },
+
+    {
+      "name": "virtualbox-iso",
+      "type": "virtualbox-iso",
+      "vm_name": "{{ user `box_name` }}-{{user `version`}}",
+
+      "iso_url": "{{user `iso_url`}}",
+      "iso_checksum": "{{user `iso_checksum`}}",
+      "iso_checksum_type": "md5",
+
+      "ssh_username": "vagrant",
+      "ssh_password": "vagrant",
+      "ssh_port": "22",
+      "ssh_wait_timeout": "30m",
+
+      "guest_os_type": "Ubuntu_64",
+      "guest_additions_path": "VBoxGuestAdditions.iso",
+      "guest_additions_mode": "attach",
+      
+      "headless": "{{user `headless`}}",
+      "boot_wait": "10s",
+      "http_directory" : "packer/http",
+      "http_port_min" : 9001,
+      "http_port_max" : 9001,
+
+      "boot_command": [
+        "<esc><esc><enter><wait>",
+        "/install/vmlinuz noapic ",
+        "preseed/url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/preseed.cfg ",
+        "debian-installer=en_US auto locale=en_US kbd-chooser/method=us ",
+        "hostname={{ user `hostname` }} ",
+        "fb=false debconf/frontend=noninteractive ",
+        "keyboard-configuration/modelcode=SKIP keyboard-configuration/layout=USA ",
+        "keyboard-configuration/variant=USA console-setup/ask_detect=false ",
+        "initrd=/install/initrd.gz -- <enter>"
+      ],
+      "shutdown_command": "echo 'shutdown -P now' > shutdown.sh; echo 'vagrant'|sudo -S sh 'shutdown.sh'",
+
+      "vboxmanage": [
+        ["modifyvm", "{{.Name}}", "--memory", "1536"],
+        ["modifyvm", "{{.Name}}", "--cpus", "2"]
+      ]
+    },
+    {
+      "name": "virtualbox-ovf",
+      "type": "virtualbox-ovf",
+      "vm_name": "{{ user `box_name` }}-{{user `version`}}",
+
+      "source_path": "{{user `ovf_file`}}",
+
+      "guest_additions_path": "VBoxGuestAdditions.iso",
+      "guest_additions_mode": "attach",
+
+      "ssh_username": "vagrant",
+      "ssh_password": "vagrant",
+      "ssh_port": "22",
+      "ssh_wait_timeout": "30m",
+
+      "headless": "{{user `headless`}}",
+      
+      "shutdown_command": "echo 'shutdown -P now' > shutdown.sh; echo 'vagrant'|sudo -S sh 'shutdown.sh'",
+
+      "vboxmanage": [
+        ["modifyvm", "{{.Name}}", "--memory", "1536"],
+        ["modifyvm", "{{.Name}}", "--cpus", "2"]
+      ]
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "shell",
+      "execute_command": "echo 'vagrant'|sudo -S bash '{{.Path}}'",
+      "inline": [
+        "mkdir -p {{ user `project_dir` }}",
+        "chown -R vagrant:vagrant {{ user `project_dir` }}",
+        "mkdir -p /etc/puppet/modules",
+        "chown -R vagrant:vagrant /etc/puppet/"
+      ],
+      "only": ["virtualbox-iso", "virtualbox-ovf"]
+    },
+    {
+      "type": "shell",
+      "execute_command": "echo 'vagrant'|sudo -S bash '{{.Path}}'",
+      "inline": [
+        "mkdir -p {{ user `project_dir` }}",
+        "chown -R ubuntu:ubuntu {{ user `project_dir` }}",
+        "mkdir -p /etc/puppet/modules",
+        "chown -R ubuntu:ubuntu /etc/puppet"
+      ],
+      "only": ["amazon-ebs"]
+    },
+    {
+      "type": "file",
+      "source": "puppet",
+      "destination": "{{ user `project_dir` }}"
+    },
+    {
+      "type": "file",
+      "source": "shell",
+      "destination": "{{ user `project_dir` }}"
+    },
+    {
+      "type": "shell",
+      "scripts": [
+        "shell/initial-setup.sh",
+        "shell/update-ruby.sh",
+        "shell/update-puppet.sh",
+        "shell/install-r10k.sh"
+      ],
+      "override": {
+        "virtualbox-iso": {
+          "execute_command": "echo 'vagrant' | sudo -S bash {{.Path}} {{ user `project_dir` }}/shell"
+        },
+        "virtualbox-ovf": {
+          "execute_command": "echo 'vagrant' | sudo -S bash {{.Path}} {{ user `project_dir` }}/shell"
+        },
+        "amazon-ebs": {
+          "execute_command": "echo 'ubuntu' | sudo -S bash {{.Path}} {{ user `project_dir` }}/shell"
+        }
+      }
+    },
+    {
+      "type": "shell",
+      "scripts": [
+        "shell/install-r10k.sh"
+      ],
+      "override": {
+        "virtualbox-ovf": {
+          "execute_command": "echo 'vagrant' | sudo -S bash {{.Path}} {{ user `project_dir` }}/shell"
+        },
+        "virtualbox-iso": {
+          "execute_command": "echo 'vagrant' | sudo -S bash {{.Path}}{{ user `project_dir` }}/shell"
+        },
+        "amazon-ebs": {
+          "execute_command": "echo 'ubuntu' | sudo -S bash {{.Path}} {{ user `project_dir` }}/shell"
+        }
+      }
+    },
+    {
+      "type": "shell",
+      "scripts": [
+        "packer/puppet-apply.sh",
+        "packer/cleanup.sh"
+      ],
+      "override": {
+        "virtualbox-ovf": {
+          "execute_command": "echo 'vagrant' | sudo -S bash {{.Path}} {{ user `project_dir` }} vagrant"
+        },
+        "virtualbox-iso": {
+          "execute_command": "echo 'vagrant' | sudo -S bash {{.Path}} {{ user `project_dir` }} vagrant"
+        },
+        "amazon-ebs": {
+          "execute_command": "echo 'ubuntu' | sudo -S bash {{.Path}} {{ user `project_dir` }} ubuntu"
+        }
+      }
+    },
+    {
+      "type": "shell",
+      "scripts": [
+        "packer/add-vagrant-ssh-key.sh",
+        "packer/zerodisk.sh"
+      ],
+      "only": ["virtualbox-iso", "virtualbox-ovf"],
+      "execute_command": "echo 'vagrant' | sudo -S bash {{.Path}} {{ user `project_dir` }}"
+    }
+  ],
+  "post-processors": [
+    {
+      "type": "vagrant",
+      "output": "{{user `box_name`}}-{{user `version`}}-{{.Provider}}.box",
+      "only": ["virtualbox-iso", "virtualbox-ovf"]
+    }
+  ]
+}
