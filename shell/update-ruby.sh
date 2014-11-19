@@ -9,11 +9,11 @@ CODENAME=$(/bin/bash $SCRIPT_ROOT/os-detect.sh CODENAME)
 
 FLAG_ROOT=/var/puppet-bootstrap
 
-if [[ ! -f "#{FLAG_ROOT}/install-ruby-${RUBY_VERSION}" ]]; then
+if [[ ! -f "${FLAG_ROOT}/install-ruby-${RUBY_VERSION}" ]]; then
     if [ "${OS}" == 'debian' ] || [ "${OS}" == 'ubuntu' ]; then
     	echo "Installing Ruby ${RUBY_VERSION}"
     	apt-get install -y "ruby${RUBY_VERSION}-dev"
-    	touch "#{FLAG_ROOT}/install-ruby-${RUBY_VERSION}"
+    	touch "${FLAG_ROOT}/install-ruby-${RUBY_VERSION}"
     	echo "Finished install Ruby ${RUBY_VERSION}"
     elif [[ "${OS}" == 'centos' ]]; then
         echo "Sorry, CentOS Ruby installation is not yet supported"
