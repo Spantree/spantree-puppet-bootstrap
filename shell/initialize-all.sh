@@ -1,6 +1,8 @@
 SCRIPT_ROOT=$(echo "$1")
+PROJECT_ROOT=$(echo "$2")
+PUPPET_VERSION=$(echo "$3")
 
-$SCRIPT_ROOT/os-detect-setup.sh $SCRIPT_ROOT
-$SCRIPT_ROOT/initial-setup.sh $SCRIPT_ROOT
-$SCRIPT_ROOT/update-puppet.sh $SCRIPT_ROOT
-$SCRIPT_ROOT/librarian-puppet-vagrant.sh $SCRIPT_ROOT
+$SCRIPT_ROOT/os-detect-setup.sh $SCRIPT_ROOT $PROJECT_ROOT
+$SCRIPT_ROOT/initial-setup.sh $SCRIPT_ROOT $PROJECT_ROOT
+$SCRIPT_ROOT/update-puppet.sh $SCRIPT_ROOT $PROJECT_ROOT $PUPPET_VERSION
+$SCRIPT_ROOT/librarian-puppet-vagrant.sh $SCRIPT_ROOT $PROJECT_ROOT

@@ -1,6 +1,7 @@
 #!/bin/bash
 
 SCRIPT_ROOT=$(echo "$1")
+PROJECT_ROOT=$(echo "$2")
 
 OS=$(/bin/bash /tmp/os-detect.sh ID)
 CODENAME=$(/bin/bash /tmp/os-detect.sh CODENAME)
@@ -68,7 +69,7 @@ if [[ ! -d "$PUPPET_DIR" ]]; then
     echo "Created directory $PUPPET_DIR"
 fi
 
-cp "$SCRIPT_ROOT/../puppet/Puppetfile" "$PUPPET_DIR"
+cp "$PROJECT_ROOT/puppet/Puppetfile" "$PUPPET_DIR"
 echo "Copied Puppetfile"
 
 if [ "$OS" == 'debian' ] || [ "$OS" == 'ubuntu' ]; then

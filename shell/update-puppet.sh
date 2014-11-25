@@ -4,6 +4,8 @@ OS=$(/bin/bash /tmp/os-detect.sh ID)
 CODENAME=$(/bin/bash /tmp/os-detect.sh CODENAME)
 RELEASE=$(/bin/bash /tmp/os-detect.sh RELEASE)
 
+PUPPET_VERSION=$(echo "$3")
+
 if [[ ! -f /var/puppet-init/update-puppet ]]; then
     if [ "$OS" == 'debian' ] || [ "$OS" == 'ubuntu' ]; then
        # if [ "$RELEASE" == 'precise' ]; then
@@ -18,10 +20,16 @@ if [[ ! -f /var/puppet-init/update-puppet ]]; then
         apt-get update
         echo "Finished running update-puppet apt-get update"
 
-        echo "Updating Puppet to latest version"
-        apt-get -y install puppet
-        PUPPET_VERSION=$(puppet help | grep 'Puppet v')
-        echo "Finished updating puppet to latest version: $PUPPET_VERSION"
+        if [ -z "$PUPPET_VERSION" ];
+        then
+            echo "Updating Puppet to latest version"
+            apt-get -y install puppet
+            PUPPET_VERSION=$(puppet help | grep 'Puppet v')
+        else
+            echo "Updating Puppet to version ${PUPPET_VERSION}"
+            apt-get -y install puppet="${PUPPET_VERSION}"
+        fi
+        echo "Finished updating puppet to version: $PUPPET_VERSION"
 
         touch /var/puppet-init/update-puppet
         echo "Created empty file /var/puppet-init/update-puppet"
@@ -34,10 +42,16 @@ if [[ ! -f /var/puppet-init/update-puppet ]]; then
         yum -y update >/dev/null
         echo "Finished running update-puppet yum update"
 
-        echo "Installing/Updating Puppet to latest version"
-        yum -y install puppet >/dev/null
-        PUPPET_VERSION=$(puppet help | grep 'Puppet v')
-        echo "Finished installing/updating puppet to latest version: $PUPPET_VERSION"
+        if [ -z "$PUPPET_VERSION" ];
+        then
+            echo "Updating Puppet to latest version"
+            yum -y install puppet >/dev/null
+            PUPPET_VERSION=$(puppet help | grep 'Puppet v')
+        else
+            echo "Updating Puppet to version ${PUPPET_VERSION}"
+            yum -y install "puppet-${PUPPET_VERSION}" >/dev/null
+        fi
+        echo "Finished updating puppet to version: $PUPPET_VERSION"
 
         touch /var/puppet-init/update-puppet
         echo "Created empty file /var/puppet-init/update-puppet"
