@@ -19,10 +19,7 @@ Vagrant.configure("2") do |config|
   config.hostmanager.ignore_private_ip = false
   config.hostmanager.include_offline = true
 
-  config.vm.provision :shell, :path => 'shell/initial-setup.sh', :args => '/vagrant/shell'
-  config.vm.provision :shell, :path => 'shell/update-ruby.sh', :args => '/vagrant/shell'
-  config.vm.provision :shell, :path => 'shell/update-puppet.sh', :args => '/vagrant/shell'
-  config.vm.provision :shell, :path => 'shell/install-r10k.sh', :args => '/vagrant/shell'
+  config.vm.provision :shell, :path => 'shell/initialize-all.sh', :args => '/vagrant/shell'
 
   config.ssh.username = "vagrant"
 

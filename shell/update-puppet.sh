@@ -1,31 +1,45 @@
 #!/bin/bash
 
-SCRIPT_ROOT=${1}
-PUPPET_VERSION=${2:-3.4.3}
+OS=$(/bin/bash /tmp/os-detect.sh ID)
+CODENAME=$(/bin/bash /tmp/os-detect.sh CODENAME)
+RELEASE=$(/bin/bash /tmp/os-detect.sh RELEASE)
 
-OS=$(/bin/bash $SCRIPT_ROOT/os-detect.sh ID)
-RELEASE=$(/bin/bash $SCRIPT_ROOT/os-detect.sh RELEASE)
-CODENAME=$(/bin/bash $SCRIPT_ROOT/os-detect.sh CODENAME)
+if [[ ! -f /var/puppet-init/update-puppet ]]; then
+    if [ "$OS" == 'debian' ] || [ "$OS" == 'ubuntu' ]; then
+       # if [ "$RELEASE" == 'precise' ]; then
+            echo "Downloading http://apt.puppetlabs.com/puppetlabs-release-${CODENAME}.deb"
+            wget --quiet --tries=5 --timeout=10 -O "/var/puppet-init/puppetlabs-release-${CODENAME}.deb" "http://apt.puppetlabs.com/puppetlabs-release-${CODENAME}.deb"
+            echo "Finished downloading http://apt.puppetlabs.com/puppetlabs-release-${CODENAME}.deb"
 
-FLAG_ROOT=/var/puppet-bootstrap
+            dpkg -i "/var/puppet-init/puppetlabs-release-${CODENAME}.deb" > /dev/null
+       # fi
 
-if [[ -f "${FLAG_ROOT}/install-puppet" ]]; then
-    exit 0
-else
-    if [ "${OS}" == 'debian' ] || [ "${OS}" == 'ubuntu' ]; then
-        apt-get -y install augeas-tools libaugeas-dev
-    elif [[ "${OS}" == 'centos' ]]; then
-        yum -y install augeas-devel
+        echo "Running update-puppet apt-get update"
+        apt-get update
+        echo "Finished running update-puppet apt-get update"
+
+        echo "Updating Puppet to latest version"
+        apt-get -y install puppet
+        PUPPET_VERSION=$(puppet help | grep 'Puppet v')
+        echo "Finished updating puppet to latest version: $PUPPET_VERSION"
+
+        touch /var/puppet-init/update-puppet
+        echo "Created empty file /var/puppet-init/update-puppet"
+    elif [ "$OS" == 'centos' ]; then
+        echo "Downloading http://yum.puppetlabs.com/el/${RELEASE}/products/x86_64/puppetlabs-release-6-7.noarch.rpm"
+        yum -y --nogpgcheck install "http://yum.puppetlabs.com/el/${RELEASE}/products/x86_64/puppetlabs-release-6-7.noarch.rpm" >/dev/null
+        echo "Finished downloading http://yum.puppetlabs.com/el/${RELEASE}/products/x86_64/puppetlabs-release-6-7.noarch.rpm"
+
+        echo "Running update-puppet yum update"
+        yum -y update >/dev/null
+        echo "Finished running update-puppet yum update"
+
+        echo "Installing/Updating Puppet to latest version"
+        yum -y install puppet >/dev/null
+        PUPPET_VERSION=$(puppet help | grep 'Puppet v')
+        echo "Finished installing/updating puppet to latest version: $PUPPET_VERSION"
+
+        touch /var/puppet-init/update-puppet
+        echo "Created empty file /var/puppet-init/update-puppet"
     fi
-
-    echo 'Installing Puppet requirements'
-    /usr/bin/gem install haml hiera facter json ruby-augeas --no-rdoc --no-ri
-    echo 'Finished installing Puppet requirements'
-
-    echo "Installing Puppet ${PUPPET_VERSION}"
-    /usr/bin/gem install puppet --version "${PUPPET_VERSION}" --no-rdoc --no-ri
-
-    echo "Finished installing Puppet ${PUPPET_VERSION}"
-
-    touch "${FLAG_ROOT}/install-puppet"
 fi
