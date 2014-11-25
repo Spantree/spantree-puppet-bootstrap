@@ -22,12 +22,12 @@ if [[ ! -f /var/puppet-init/update-puppet ]]; then
 
         if [ -z "$PUPPET_VERSION" ];
         then
-            echo "Updating Puppet to version ${PUPPET_VERSION}"
-            apt-get -y install puppet="${PUPPET_VERSION}"
-        else
             echo "Updating Puppet to latest version"
             apt-get -y install puppet
             PUPPET_VERSION=$(puppet help | grep 'Puppet v')
+        else
+            echo "Updating Puppet to version ${PUPPET_VERSION}"
+            apt-get -y install puppet="${PUPPET_VERSION}"
         fi
         echo "Finished updating puppet to version: $PUPPET_VERSION"
 
