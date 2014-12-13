@@ -5,6 +5,7 @@ CODENAME=$(/bin/bash /tmp/os-detect.sh CODENAME)
 
 # this is a temporary workaround
 if [ "$OS" == 'ubuntu' ]; then
+  if [ -d /var/lib/cloud ]; then
     while [ ! -f /var/lib/cloud/instance/boot-finished ] ; do
         sleep 10
         echo "sleeping for 10 seconds while cloud-init is running"
@@ -13,6 +14,7 @@ if [ "$OS" == 'ubuntu' ]; then
         sleep 10
         echo "Waiting while apt is ran by cloud-init"
     done
+  fi
 fi
 
 if [[ ! -d /var/puppet-init/ ]]; then
