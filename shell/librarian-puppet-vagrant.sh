@@ -6,40 +6,6 @@ PROJECT_ROOT=$(echo "$2")
 OS=$(/bin/bash /tmp/os-detect.sh ID)
 CODENAME=$(/bin/bash /tmp/os-detect.sh CODENAME)
 
-RUBYVER=$(ruby -e "print RUBY_VERSION")
-
-vercomp () {
-    if [[ $1 == $2 ]]
-    then
-        return 0
-    fi
-    local IFS=.
-    local i ver1=($1) ver2=($2)
-    # fill empty fields in ver1 with zeros
-    for ((i=${#ver1[@]}; i<${#ver2[@]}; i++))
-    do
-        ver1[i]=0
-    done
-    for ((i=0; i<${#ver1[@]}; i++))
-    do
-        if [[ -z ${ver2[i]} ]]
-        then
-            # fill empty fields in ver2 with zeros
-            ver2[i]=0
-        fi
-        if ((10#${ver1[i]} > 10#${ver2[i]}))
-        then
-            return 1
-        fi
-        if ((10#${ver1[i]} < 10#${ver2[i]}))
-        then
-            return 2
-        fi
-    done
-    return 0
-}
-
-
 # Directory in which librarian-puppet should manage its modules directory
 PUPPET_DIR=/etc/puppet/
 
@@ -102,6 +68,40 @@ if [ "$OS" == 'ubuntu' ]; then
     fi
 fi
 
+# we test for ruby after we have some cycle that installs at LEAST the ruby runtime
+RUBYVER=$(ruby -e "print RUBY_VERSION")
+
+vercomp () {
+    if [[ $1 == $2 ]]
+    then
+        return 0
+    fi
+    local IFS=.
+    local i ver1=($1) ver2=($2)
+    # fill empty fields in ver1 with zeros
+    for ((i=${#ver1[@]}; i<${#ver2[@]}; i++))
+    do
+        ver1[i]=0
+    done
+    for ((i=0; i<${#ver1[@]}; i++))
+    do
+        if [[ -z ${ver2[i]} ]]
+        then
+            # fill empty fields in ver2 with zeros
+            ver2[i]=0
+        fi
+        if ((10#${ver1[i]} > 10#${ver2[i]}))
+        then
+            return 1
+        fi
+        if ((10#${ver1[i]} < 10#${ver2[i]}))
+        then
+            return 2
+        fi
+    done
+    return 0
+}
+
 cd "$PUPPET_DIR"
 
 if [[ ! -f /var/puppet-init/librarian-puppet-installed ]]; then
@@ -110,10 +110,10 @@ if [[ ! -f /var/puppet-init/librarian-puppet-installed ]]; then
     RET=$?
     if [[ $RET -eq 0 ]]; then
         echo 'Installing librarian-puppet <1.1.0 because 1.1.x is not supported on ruby 1.8'
-        gem install librarian-puppet -v"<1.1.0"
+        gem install librarian-puppet -V -v"<1.1.0"
     else
         echo 'Installing librarian-puppet >1.1.x'
-        gem install librarian-puppet -v">1.1.0" 
+        gem install librarian-puppet -V -v">1.1.0" 
     fi
     echo 'Finished installing librarian-puppet'
 
