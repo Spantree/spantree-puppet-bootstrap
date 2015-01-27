@@ -10,9 +10,11 @@
     "aws_secret_key": "{{env `AWS_SECRET_KEY`}}",
     "source_ami": "ami-5ad75532",
 
+    "vagrant_cloud_token": "{{env `VAGRANT_CLOUD_TOKEN}}",
+
     "headless": true,
     
-    "version": "1.0.0",
+    "version": "1.2.0",
     "build_number": 1,
 
     "project_dir": "/usr/local/src/spantree-puppet-bootstrap",
@@ -218,6 +220,12 @@
       "type": "vagrant",
       "output": "{{user `box_name`}}-{{user `version`}}-{{.Provider}}.box",
       "only": ["virtualbox-iso", "virtualbox-ovf"]
+    },
+    {
+      "type": "vagrant-cloud",
+      "box_tag": "spantree/ubuntu-precise-64",
+      "access_token": "{{user `vagrant_cloud_token`}}",
+      "version": "{{user `version`}}"
     }
   ]
 }
