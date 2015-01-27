@@ -224,7 +224,7 @@
     {
       "type": "vagrant-cloud",
       "box_tag": "spantree/ubuntu-precise-64",
-      "access_token": "{{user `cloud_token`}}",
+      "access_token": "{{user `vagrant_cloud_token`}}",
       "version": "{{user `version`}}"
     }
   ]
