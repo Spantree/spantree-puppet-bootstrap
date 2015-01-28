@@ -15,4 +15,5 @@ chmod 0600 $HOME/.ssh/authorized_keys
 chown vagrant:vagrant -R $HOME/.ssh
 
 echo "Allowing vagrant user to perform no-pass sudo"
-echo "vagrant  ALL=(ALL) NOPASSWD:SETENV: /bin/" > /etc/sudoers.d/01_vagrant
+usermod -aG sudo vagrant
+echo "ALL  ALL = (ALL) NOPASSWD: ALL" > /etc/sudoers.d/01_nopasswd
