@@ -35,8 +35,8 @@
       "secret_key": "{{user `aws_secret_key`}}",
       
       "source_ami": "{{user `source_ami`}}",
-      "ami_description": "{{ user `box_name` }}-{{user `version`}}-{{ user `build_number` }} amd64",
-      "ami_name": "{{ user `box_name` }}-{{ user `version`}}-{{ user `build_number` }} ubuntu 14.04.01 amd64 {{isotime | clean_ami_name}}",
+      "ami_description": "{{ user `box_name` }}-{{ user `version`}}-{{ user `build_number` }} ubuntu 14.04.01 amd64 {{isotime | clean_ami_name}}",
+      "ami_name": "{{ user `box_name` }}-{{user `version`}}-{{ user `build_number` }}",
       
       "instance_type": "c3.large",
       "region": "us-east-1",
