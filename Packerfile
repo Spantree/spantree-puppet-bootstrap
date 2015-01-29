@@ -1,6 +1,6 @@
 {
   "variables": {
-    "box_name": "spantree-puppet-bootstrap-precise64",
+    "box_name": "ubuntu-trusty-64",
 
     "iso_url": "http://releases.ubuntu.com/14.04.1/ubuntu-14.04.1-server-amd64.iso",
     "iso_checksum": "ca2531b8cd79ea5b778ede3a524779b9",
@@ -10,11 +10,13 @@
     "aws_secret_key": "{{env `AWS_SECRET_KEY`}}",
     "source_ami": "ami-5ad75532",
 
-    "vagrant_cloud_token": "{{env `VAGRANT_CLOUD_TOKEN}}",
+    "vagrant_cloud_token": "{{env `VAGRANT_CLOUD_TOKEN`}}",
+
+    "puppet_version": "{{ env `PUPPET_VERSION` }}",
 
     "headless": true,
     
-    "version": "1.2.0",
+    "version": "1.2.1",
     "build_number": 1,
 
     "project_dir": "/usr/local/src/spantree-puppet-bootstrap",
@@ -121,6 +123,25 @@
     {
       "type": "shell",
       "execute_command": "echo 'vagrant'|sudo -S bash '{{.Path}}'",
+      "scripts": [
+        "packer/install-vboxguest.sh"
+      ],
+      "only": ["virtualbox-iso", "virtualbox-ovf"]
+    },
+    {
+      "type": "shell",
+      "execute_command": "echo 'vagrant'|sudo -S bash '{{.Path}}'",
+      "inline": [
+        "mkdir -p {{ user `project_dir` }}",
+        "chown -R vagrant:vagrant {{ user `project_dir` }}",
+        "mkdir -p /etc/puppet/modules",
+        "chown -R vagrant:vagrant /etc/puppet/"
+      ],
+      "only": ["virtualbox-iso", "virtualbox-ovf"]
+    },
+    {
+      "type": "shell",
+      "execute_command": "echo 'vagrant'|sudo -S bash '{{.Path}}'",
       "inline": [
         "mkdir -p {{ user `project_dir` }}",
         "chown -R vagrant:vagrant {{ user `project_dir` }}",
@@ -153,44 +174,26 @@
     {
       "type": "shell",
       "scripts": [
+        "shell/os-detect-setup.sh",
         "shell/initial-setup.sh",
-        "shell/update-ruby.sh",
         "shell/update-puppet.sh",
-        "shell/install-r10k.sh"
+        "shell/librarian-puppet-vagrant.sh"
       ],
       "override": {
         "virtualbox-iso": {
-          "execute_command": "echo 'vagrant' | sudo -S bash {{.Path}} {{ user `project_dir` }}/shell"
+          "execute_command": "echo 'vagrant' | sudo -S bash {{.Path}} {{ user `project_dir` }}/shell {{ user `project_dir` }} 3.4.3-1"
         },
         "virtualbox-ovf": {
-          "execute_command": "echo 'vagrant' | sudo -S bash {{.Path}} {{ user `project_dir` }}/shell"
+          "execute_command": "echo 'vagrant' | sudo -S bash {{.Path}} {{ user `project_dir` }}/shell {{ user `project_dir` }}/shell {{ user `project_dir` }}{{ user `puppet_version` }}"
         },
         "amazon-ebs": {
-          "execute_command": "echo 'ubuntu' | sudo -S bash {{.Path}} {{ user `project_dir` }}/shell"
+          "execute_command": "echo 'ubuntu' | sudo -S bash {{.Path}} {{ user `project_dir` }}/shell {{ user `project_dir` }} 3.4.3-1"
         }
       }
     },
     {
       "type": "shell",
       "scripts": [
-        "shell/install-r10k.sh"
-      ],
-      "override": {
-        "virtualbox-ovf": {
-          "execute_command": "echo 'vagrant' | sudo -S bash {{.Path}} {{ user `project_dir` }}/shell"
-        },
-        "virtualbox-iso": {
-          "execute_command": "echo 'vagrant' | sudo -S bash {{.Path}}{{ user `project_dir` }}/shell"
-        },
-        "amazon-ebs": {
-          "execute_command": "echo 'ubuntu' | sudo -S bash {{.Path}} {{ user `project_dir` }}/shell"
-        }
-      }
-    },
-    {
-      "type": "shell",
-      "scripts": [
-        "packer/puppet-apply.sh",
         "packer/cleanup.sh"
       ],
       "override": {
@@ -209,23 +212,20 @@
       "type": "shell",
       "scripts": [
         "packer/add-vagrant-ssh-key.sh",
-        "packer/zerodisk.sh"
+        "packer/zerodisk.sh",
+        "packer/cleanup-vagrant.sh"
       ],
       "only": ["virtualbox-iso", "virtualbox-ovf"],
       "execute_command": "echo 'vagrant' | sudo -S bash {{.Path}} {{ user `project_dir` }}"
     }
   ],
   "post-processors": [
-    {
-      "type": "vagrant",
-      "output": "{{user `box_name`}}-{{user `version`}}-{{.Provider}}.box",
-      "only": ["virtualbox-iso", "virtualbox-ovf"]
-    },
-    {
-      "type": "vagrant-cloud",
-      "box_tag": "spantree/ubuntu-precise-64",
-      "access_token": "{{user `vagrant_cloud_token`}}",
-      "version": "{{user `version`}}"
-    }
+    [
+      {
+        "type": "vagrant",
+        "output": "{{user `box_name`}}-{{user `version`}}-{{.Provider}}-puppet-{{ user `puppet_version` }}.box",
+        "only": ["virtualbox-iso", "virtualbox-ovf"]
+      }
+    ]
   ]
 }
