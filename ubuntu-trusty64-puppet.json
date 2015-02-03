@@ -1,0 +1,192 @@
+{
+  "variables": {
+    "box_name": "ubuntu-trusty-64",
+
+    "iso_url": "http://releases.ubuntu.com/14.04.1/ubuntu-14.04.1-server-amd64.iso",
+    "iso_checksum": "ca2531b8cd79ea5b778ede3a524779b9",
+    "iso_checksum_type": "md5",
+
+    "vbox_guest_additions_url": "http://dlc-cdn.sun.com/virtualbox/4.3.20/VBoxGuestAdditions_4.3.20.iso",
+    "vbox_guest_additions_sha256": "9ab48f44ac26a6deb374cb5fe6bad103bbf4fdf5186140e2d40ebe48bd01f3ea",
+
+    "aws_access_key": "{{env `AWS_ACCESS_KEY`}}",
+    "aws_secret_key": "{{env `AWS_SECRET_KEY`}}",
+    "source_ami": "ami-5ad75532",
+
+    "vagrant_cloud_token": "{{env `VAGRANT_CLOUD_TOKEN`}}",
+
+    "puppet_version": "{{ env `PUPPET_VERSION` }}",
+
+    "headless": true,
+    
+    "version": "1.0.1",
+    "build_number": 2,
+
+    "project_dir": "/usr/local/src/spantree-puppet-bootstrap",
+    
+    "hostname": "puppetbootstrap.spantree.internal"
+  },
+
+  "builders": [
+    {
+      "name": "amazon-ebs",
+      "type": "amazon-ebs",
+      
+      "access_key": "{{user `aws_access_key`}}",
+      "secret_key": "{{user `aws_secret_key`}}",
+      
+      "source_ami": "{{user `source_ami`}}",
+      "ami_description": "{{ user `box_name` }}-{{ user `version`}}-{{ user `build_number` }} ubuntu 14.04.01 amd64 {{isotime | clean_ami_name}}",
+      "ami_name": "{{ user `box_name` }}-{{user `version`}}-{{ user `build_number` }}",
+      
+      "instance_type": "c3.large",
+      "region": "us-east-1",
+      
+      "ssh_username": "ubuntu",
+      
+      "tags": {
+        "OS_Version": "Ubuntu",
+        "Release": "trusty",
+        "Vendor": "spantree",
+        "Name": "{{ user `box_name` }}-{{ user `version`}}-{{ user `build_number` }}",
+        "Version": "{{user `version`}}-{{ user `build_number` }}"
+      }
+    },
+    {
+      "name": "virtualbox-iso",
+      "type": "virtualbox-iso",
+      "vm_name": "{{ user `box_name` }}-{{user `version`}}",
+
+      "iso_url": "{{user `iso_url`}}",
+      "iso_checksum": "{{user `iso_checksum`}}",
+      "iso_checksum_type": "md5",
+
+      "ssh_username": "vagrant",
+      "ssh_password": "vagrant",
+      "ssh_port": "22",
+      "ssh_wait_timeout": "30m",
+
+      "guest_os_type": "Ubuntu_64",
+
+      "guest_additions_url": "{{ user `vbox_guest_additions_url` }}",
+      "guest_additions_sha256": "{{ user `vbox_guest_additions_sha256` }}",
+      "guest_additions_path": "VBoxGuestAdditions_{{.Version}}.iso",
+      
+      "headless": "{{user `headless`}}",
+      "boot_wait": "10s",
+      "http_directory" : "packer/http",
+      "http_port_min" : 9001,
+      "http_port_max" : 9001,
+
+      "boot_command": [
+        "<esc><esc><enter><wait>",
+        "/install/vmlinuz noapic ",
+        "preseed/url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/preseed.cfg ",
+        "debian-installer=en_US auto locale=en_US kbd-chooser/method=us ",
+        "hostname={{ user `hostname` }} ",
+        "fb=false debconf/frontend=noninteractive ",
+        "keyboard-configuration/modelcode=SKIP keyboard-configuration/layout=USA ",
+        "keyboard-configuration/variant=USA console-setup/ask_detect=false ",
+        "initrd=/install/initrd.gz -- <enter>"
+      ],
+      "shutdown_command": "echo 'shutdown -P now' > shutdown.sh; echo 'vagrant'|sudo -S sh 'shutdown.sh'",
+
+      "vboxmanage": [
+        ["modifyvm", "{{.Name}}", "--memory", "1536"],
+        ["modifyvm", "{{.Name}}", "--cpus", "2"]
+      ]
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "shell",
+      "execute_command": "echo 'vagrant'|sudo -S bash '{{.Path}}'",
+      "scripts": [
+        "packer/install-vboxguest.sh"
+      ],
+      "only": ["virtualbox-iso"]
+    },
+    {
+      "type": "shell",
+      "execute_command": "echo 'vagrant'|sudo -S bash '{{.Path}}'",
+      "inline": [
+        "mkdir -p {{ user `project_dir` }}",
+        "chown -R vagrant:vagrant {{ user `project_dir` }}",
+        "mkdir -p /etc/puppet/modules",
+        "chown -R vagrant:vagrant /etc/puppet/"
+      ],
+      "only": ["virtualbox-iso"]
+    },
+    {
+      "type": "shell",
+      "execute_command": "sudo -S bash '{{.Path}}'",
+      "inline": [
+        "mkdir -p {{ user `project_dir` }}",
+        "chown -R ubuntu:ubuntu {{ user `project_dir` }}",
+        "mkdir -p /etc/puppet/modules",
+        "chown -R ubuntu:ubuntu /etc/puppet"
+      ],
+      "only": ["amazon-ebs"]
+    },
+    {
+      "type": "file",
+      "source": "puppet",
+      "destination": "{{ user `project_dir` }}"
+    },
+    {
+      "type": "file",
+      "source": "shell",
+      "destination": "{{ user `project_dir` }}"
+    },
+    {
+      "type": "shell",
+      "scripts": [
+        "shell/os-detect-setup.sh",
+        "shell/initial-setup.sh",
+        "shell/update-puppet.sh",
+        "shell/librarian-puppet-vagrant.sh"
+      ],
+      "override": {
+        "virtualbox-iso": {
+          "execute_command": "echo 'vagrant' | sudo -S bash {{.Path}} {{ user `project_dir` }}/shell {{ user `project_dir` }} {{ user `puppet_version` }}"
+        },
+        "amazon-ebs": {
+          "execute_command": "sudo -S bash {{.Path}} {{ user `project_dir` }}/shell {{ user `project_dir` }} {{ user `puppet_version` }}"
+        }
+      }
+    },
+    {
+      "type": "shell",
+      "scripts": [
+        "packer/cleanup.sh"
+      ],
+      "override": {
+        "virtualbox-iso": {
+          "execute_command": "echo 'vagrant' | sudo -S bash {{.Path}} {{ user `project_dir` }} vagrant"
+        },
+        "amazon-ebs": {
+          "execute_command": "sudo -S bash {{.Path}} {{ user `project_dir` }} ubuntu"
+        }
+      }
+    },
+    {
+      "type": "shell",
+      "scripts": [
+        "packer/add-vagrant-ssh-key.sh",
+        "packer/zerodisk.sh",
+        "packer/cleanup-vagrant.sh"
+      ],
+      "only": ["virtualbox-iso"],
+      "execute_command": "echo 'vagrant' | sudo -S bash {{.Path}} {{ user `project_dir` }}"
+    }
+  ],
+  "post-processors": [
+    [
+      {
+        "type": "vagrant",
+        "output": "{{user `box_name`}}-{{user `version`}}-{{.Provider}}-puppet-{{ user `puppet_version` }}.box",
+        "only": ["virtualbox-iso"]
+      }
+    ]
+  ]
+}
