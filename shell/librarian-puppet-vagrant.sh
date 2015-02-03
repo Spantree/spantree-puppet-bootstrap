@@ -6,6 +6,8 @@ PROJECT_ROOT=$(echo "$2")
 OS=$(/bin/bash /tmp/os-detect.sh ID)
 CODENAME=$(/bin/bash /tmp/os-detect.sh CODENAME)
 
+export DEBIAN_FRONTEND=noninteractive
+
 # Directory in which librarian-puppet should manage its modules directory
 PUPPET_DIR=/etc/puppet/
 

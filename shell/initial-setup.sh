@@ -3,6 +3,8 @@
 OS=$(/bin/bash /tmp/os-detect.sh ID)
 CODENAME=$(/bin/bash /tmp/os-detect.sh CODENAME)
 
+export DEBIAN_FRONTEND=noninteractive
+
 # this is a temporary workaround
 if [ "$OS" == 'ubuntu' ]; then
   if [ -d /var/lib/cloud ]; then

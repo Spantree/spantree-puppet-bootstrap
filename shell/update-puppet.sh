@@ -4,6 +4,8 @@ OS=$(/bin/bash /tmp/os-detect.sh ID)
 CODENAME=$(/bin/bash /tmp/os-detect.sh CODENAME)
 RELEASE=$(/bin/bash /tmp/os-detect.sh RELEASE)
 
+export DEBIAN_FRONTEND=noninteractive
+
 PUPPET_VERSION=$(echo "$3")
 
 if [[ ! -f /var/puppet-init/update-puppet ]]; then
