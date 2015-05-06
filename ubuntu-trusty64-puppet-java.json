@@ -2,12 +2,12 @@
   "variables": {
     "box_name": "ubuntu-trusty-64",
 
-    "iso_url": "http://releases.ubuntu.com/14.04.1/ubuntu-14.04.1-server-amd64.iso",
-    "iso_checksum": "ca2531b8cd79ea5b778ede3a524779b9",
+    "iso_url": "http://releases.ubuntu.com/14.04.2/ubuntu-14.04.2-server-amd64.iso",
+    "iso_checksum": "83aabd8dcf1e8f469f3c72fff2375195",
     "iso_checksum_type": "md5",
 
-    "vbox_guest_additions_url": "http://dlc-cdn.sun.com/virtualbox/4.3.20/VBoxGuestAdditions_4.3.20.iso",
-    "vbox_guest_additions_sha256": "9ab48f44ac26a6deb374cb5fe6bad103bbf4fdf5186140e2d40ebe48bd01f3ea",
+    "vbox_guest_additions_url": "http://dlc-cdn.sun.com/virtualbox/4.3.26/VBoxGuestAdditions_4.3.26.iso",
+    "vbox_guest_additions_sha256": "c5e46533a6ff8df177ed5c9098624f6cec46ca392bab16de2017195580088670",
 
     "aws_access_key": "{{env `AWS_ACCESS_KEY`}}",
     "aws_secret_key": "{{env `AWS_SECRET_KEY`}}",
@@ -19,8 +19,8 @@
 
     "headless": true,
     
-    "version": "1.0.1",
-    "build_number": 2,
+    "version": "1.0.2",
+    "build_number": 3,
 
     "project_dir": "/usr/local/src/spantree-puppet-bootstrap",
     
@@ -102,14 +102,6 @@
     {
       "type": "shell",
       "execute_command": "echo 'vagrant'|sudo -S bash '{{.Path}}'",
-      "scripts": [
-        "packer/install-vboxguest.sh"
-      ],
-      "only": ["virtualbox-iso"]
-    },
-    {
-      "type": "shell",
-      "execute_command": "echo 'vagrant'|sudo -S bash '{{.Path}}'",
       "inline": [
         "mkdir -p {{ user `project_dir` }}",
         "chown -R vagrant:vagrant {{ user `project_dir` }}",
@@ -155,6 +147,14 @@
           "execute_command": "sudo -S bash {{.Path}} {{ user `project_dir` }}/shell {{ user `project_dir` }} {{ user `puppet_version` }}"
         }
       }
+    },
+    {
+      "type": "shell",
+      "execute_command": "echo 'vagrant'|sudo -S bash '{{.Path}}'",
+      "scripts": [
+        "packer/install-vboxguest.sh"
+      ],
+      "only": ["virtualbox-iso"]
     },
     {
       "type": "shell",
