@@ -12,7 +12,7 @@ cat <<'EOF'
 
 export JAVA_HOME=/usr/java/jdk1.8.0_45
 
-export PATH="${JAVA_HOME}/bin:${PATH}"
+export PATH="/usr/local/bin:${JAVA_HOME}/bin:${PATH}"
 
 EOF
 ) > /etc/profile.d/java.sh
