@@ -4,9 +4,9 @@ PROJECT_DIR=$(echo "$1")
 #rm -f /etc/udev/rules.d/70-persistent-net.rules
 
 # echo "Cleaning out apt cache, lists, and autoremoving any packages."
-rm -f /var/lib/apt/lists/lock
-rm -f /var/lib/apt/lists/*_*
-rm -f /var/lib/apt/lists/partial/*
+#rm -f /var/lib/apt/lists/lock
+#rm -f /var/lib/apt/lists/*_*
+#rm -f /var/lib/apt/lists/partial/*
 apt-get -y autoremove
 apt-get -y clean
 
