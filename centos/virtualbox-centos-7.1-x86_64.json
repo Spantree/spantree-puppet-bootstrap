@@ -23,16 +23,10 @@
       "type": "virtualbox-iso",
       "vboxmanage": [
         [
-          "modifyvm",
-          "{{.Name}}",
-          "--memory",
-          "480"
+          "modifyvm", "{{.Name}}", "--memory", "2048"
         ],
         [
-          "modifyvm",
-          "{{.Name}}",
-          "--cpus",
-          "1"
+          "modifyvm", "{{.Name}}", "--cpus", "2"
         ]
       ],
       "virtualbox_version_file": ".vbox_version",
@@ -47,21 +41,28 @@
   ],
   "provisioners": [
     {
-      "environment_vars": [
-        "CHEF_VERSION={{user `chef_version`}}"
-      ],
       "execute_command": "echo 'vagrant' | {{.Vars}} sudo -S -E bash '{{.Path}}'",
       "scripts": [
         "scripts/centos/fix-slow-dns.sh",
         "scripts/common/sshd.sh",
         "scripts/common/vagrant.sh",
-        "scripts/common/vmtools.sh",
         "scripts/centos/install-puppet.sh",
         "scripts/centos/install-java8.sh",
+        "scripts/centos/upgrade-system.sh",
+        "scripts/centos/install-kernel-options.sh",
+        "scripts/common/reboot.sh"
+      ],
+      "type": "shell"
+    },
+    {
+      "execute_command": "echo 'vagrant' | {{.Vars}} sudo -S -E bash '{{.Path}}'",
+      "scripts": [
+        "scripts/common/vmtools.sh",
         "scripts/centos/cleanup.sh",
         "scripts/common/minimize.sh"
       ],
       "type": "shell"
+      "pause_before": "60s"
     }
   ],
   "variables": {
